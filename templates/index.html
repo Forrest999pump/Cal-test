@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เครื่องคิดเลข</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 2rem;
+      width: 340px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      text-align: center;
+      color: #e2e8f0;
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      letter-spacing: 1px;
+    }
+
+    .display {
+      background: rgba(0,0,0,0.35);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      min-height: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end;
+      margin-bottom: 1.2rem;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    #expression {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      min-height: 18px;
+    }
+
+    #result {
+      color: #f1f5f9;
+      font-size: 2rem;
+      font-weight: 700;
+      word-break: break-all;
+    }
+
+    #error-msg {
+      color: #f87171;
+      font-size: 0.85rem;
+      text-align: center;
+      min-height: 20px;
+      margin-bottom: 0.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      height: 60px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, filter 0.1s;
+      color: #f1f5f9;
+    }
+
+    button:active { transform: scale(0.93); }
+
+    .btn-num {
+      background: rgba(255,255,255,0.1);
+    }
+    .btn-num:hover { filter: brightness(1.3); }
+
+    .btn-op {
+      background: #3b82f6;
+    }
+    .btn-op:hover { filter: brightness(1.2); }
+
+    .btn-clear {
+      background: #ef4444;
+      grid-column: span 2;
+    }
+    .btn-clear:hover { filter: brightness(1.2); }
+
+    .btn-equals {
+      background: #10b981;
+      grid-column: span 2;
+    }
+    .btn-equals:hover { filter: brightness(1.2); }
+
+    .btn-zero { grid-column: span 2; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🧮 เครื่องคิดเลข</h1>
+
+    <div class="display">
+      <span id="expression"></span>
+      <span id="result">0</span>
+    </div>
+
+    <div id="error-msg"></div>
+
+    <div class="grid">
+      <button class="btn-clear" onclick="clearAll()">AC</button>
+      <button class="btn-op"  onclick="backspace()">⌫</button>
+      <button class="btn-op"  onclick="setOp('/')">÷</button>
+
+      <button class="btn-num" onclick="append('7')">7</button>
+      <button class="btn-num" onclick="append('8')">8</button>
+      <button class="btn-num" onclick="append('9')">9</button>
+      <button class="btn-op"  onclick="setOp('*')">×</button>
+
+      <button class="btn-num" onclick="append('4')">4</button>
+      <button class="btn-num" onclick="append('5')">5</button>
+      <button class="btn-num" onclick="append('6')">6</button>
+      <button class="btn-op"  onclick="setOp('-')">−</button>
+
+      <button class="btn-num" onclick="append('1')">1</button>
+      <button class="btn-num" onclick="append('2')">2</button>
+      <button class="btn-num" onclick="append('3')">3</button>
+      <button class="btn-op"  onclick="setOp('+')">+</button>
+
+      <button class="btn-num btn-zero" onclick="append('0')">0</button>
+      <button class="btn-num" onclick="appendDot()">.</button>
+      <button class="btn-equals" onclick="compute()">=</button>
+    </div>
+  </div>
+
+  <script>
+    let num1 = '', operator = '', num2 = '', waitingForNum2 = false;
+
+    const resultEl     = document.getElementById('result');
+    const expressionEl = document.getElementById('expression');
+    const errorEl      = document.getElementById('error-msg');
+
+    function getCurrent() { return waitingForNum2 ? num2 : num1; }
+    function setCurrent(v){ waitingForNum2 ? (num2 = v) : (num1 = v); }
+
+    function updateDisplay() {
+      errorEl.textContent = '';
+      const cur = getCurrent();
+      resultEl.textContent = cur === '' ? '0' : cur;
+      expressionEl.textContent = operator ? `${num1} ${opSymbol(operator)}` : '';
+    }
+
+    function opSymbol(op) {
+      return { '+': '+', '-': '−', '*': '×', '/': '÷' }[op] || op;
+    }
+
+    function append(digit) {
+      let cur = getCurrent();
+      if (cur.length >= 15) return;
+      setCurrent(cur + digit);
+      updateDisplay();
+    }
+
+    function appendDot() {
+      let cur = getCurrent();
+      if (cur.includes('.')) return;
+      setCurrent((cur || '0') + '.');
+      updateDisplay();
+    }
+
+    function setOp(op) {
+      if (num1 === '') return;
+      if (num2 !== '') compute();          // chain calculation
+      operator = op;
+      waitingForNum2 = true;
+      num2 = '';
+      updateDisplay();
+    }
+
+    function backspace() {
+      let cur = getCurrent();
+      setCurrent(cur.slice(0, -1));
+      updateDisplay();
+    }
+
+    function clearAll() {
+      num1 = ''; operator = ''; num2 = ''; waitingForNum2 = false;
+      resultEl.textContent = '0';
+      expressionEl.textContent = '';
+      errorEl.textContent = '';
+    }
+
+    async function compute() {
+      if (num1 === '' || operator === '' || num2 === '') return;
+
+      expressionEl.textContent = `${num1} ${opSymbol(operator)} ${num2} =`;
+
+      try {
+        const res = await fetch('/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ num1, operator, num2 })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error;
+          resultEl.textContent = 'Error';
+          return;
+        }
+
+        resultEl.textContent = data.result;
+        // ให้ผลลัพธ์กลายเป็น num1 สำหรับคำนวณต่อ
+        num1 = String(data.result);
+        operator = ''; num2 = ''; waitingForNum2 = false;
+
+      } catch {
+        errorEl.textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้';
+      }
+    }
+
+    document.addEventListener('keydown', e => {
+      if ('0123456789'.includes(e.key)) append(e.key);
+      else if (e.key === '.') appendDot();
+      else if (['+', '-', '*', '/'].includes(e.key)) setOp(e.key);
+      else if (e.key === 'Enter' || e.key === '=') compute();
+      else if (e.key === 'Backspace') backspace();
+      else if (e.key === 'Escape') clearAll();
+    });
+  </script>
+</body>
+</html>
